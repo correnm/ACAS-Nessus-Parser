@@ -1,0 +1,39 @@
+host,vendor,macAddress,IP-Address,O/S,operatingSystem,systemType,FQDN,scanDate
+192.168.116.254,VMware Inc.,00:50:56:e2:fa:82,192.168.116.254,other,,,,Fri Dec 16 13:17:54 2016
+192.168.1.102,NETGEAR,2c:30:33:06:3f:cf,192.168.1.102,other,Cyber Switching ePower PDU,embedded,,Fri Dec 16 12:59:41 2016
+192.168.1.101,NETGEAR,2c:30:33:06:78:ef,192.168.1.101,other,Cyber Switching ePower PDU,embedded,,Fri Dec 16 12:56:51 2016
+192.168.1.100,NETGEAR,2c:30:33:06:3f:cf,192.168.1.100,other,Cyber Switching ePower PDU,embedded,,Fri Dec 16 12:59:15 2016
+192.168.1.98,Private,f0:4f:7c:96:a3:c0,192.168.1.98,other,,,,Fri Dec 16 12:50:49 2016
+192.168.1.95,Apple Inc.,90:72:40:02:ff:23,192.168.1.95,mac,AppleTV (2nd or 3rd Generation),embedded,,Fri Dec 16 12:53:39 2016
+192.168.1.86,Polycom,00:04:f2:bb:a4:f6,192.168.1.86,other,Polycom SoundPoint IP Phone,embedded,,Fri Dec 16 12:50:26 2016
+192.168.1.81,Apple Inc.,e4:ce:8f:59:40:76,192.168.1.81,mac,Mac OS X 10.10,general-purpose,,Fri Dec 16 12:45:04 2016
+DESKTOP-J4S1O4I,Dell Inc.,f4:8e:38:79:42:55,192.168.1.74,other,,,DESKTOP-J4S1O4I,Fri Dec 16 12:50:15 2016
+192.168.1.62,Polycom,00:04:f2:90:a3:19,192.168.1.62,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:46:37 2016
+192.168.1.60,Polycom,00:04:f2:90:9f:d2,192.168.1.60,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:40:39 2016
+192.168.1.59,Polycom,00:04:f2:90:a3:21,192.168.1.59,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:40:33 2016
+192.168.1.58,Polycom,00:04:f2:90:a0:4d,192.168.1.58,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:40:04 2016
+192.168.1.57,Polycom,00:04:f2:90:a3:16,192.168.1.57,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:38:14 2016
+192.168.1.56,Polycom,00:04:f2:90:a3:28,192.168.1.56,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:32:21 2016
+192.168.1.55,Polycom,00:04:f2:90:8f:3f,192.168.1.55,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:32:09 2016
+192.168.1.54,BizLink (Kunshan) Co.Ltd,9c:eb:e8:1e:47:6f,192.168.1.54,other,,,,Fri Dec 16 12:31:43 2016
+SaraPro-PC,Apple Inc.,70:56:81:91:c8:d5,192.168.1.50,windows,Microsoft Windows 10 Home,general-purpose,SaraPro-PC,Fri Dec 16 12:29:59 2016
+G2VB-APP01,INVENTEC Corporation,00:26:6c:17:99:d2,192.168.1.48,windows,Microsoft Windows 10 Home,general-purpose,G2VB-APP01,Fri Dec 16 12:23:50 2016
+DESKTOP-3AIBBC3,Intel Corporate,e4:a7:a0:47:5c:4d,192.168.1.46,other,,,DESKTOP-3AIBBC3,Fri Dec 16 12:23:55 2016
+192.168.1.40,Apple Inc.,90:3c:92:dc:60:43,192.168.1.40,mac,Mac OS X 10.10,general-purpose,,Fri Dec 16 12:21:43 2016
+192.168.1.39,Apple Inc.,a4:d1:8c:dc:ae:f8,192.168.1.39,mac,Mac OS X 10.10,general-purpose,,Fri Dec 16 12:15:40 2016
+192.168.1.35,Amazon Technologies Inc.,ac:63:be:8b:a9:cc,192.168.1.35,other,,,,Fri Dec 16 12:58:41 2016
+DESKTOP-47KJR5S,N/A,52:0e:96:f4:7b:75,192.168.1.30,windows,Microsoft Windows 10 Home,general-purpose,DESKTOP-47KJR5S,Fri Dec 16 12:14:33 2016
+192.168.1.29,Apple Inc.,a8:66:7f:30:f3:35,192.168.1.29,other,,,,Fri Dec 16 12:15:19 2016
+localhost,,,192.168.116.1,windows,Microsoft Windows 10 Pro,general-purpose,localhost,Fri Dec 16 13:07:53 2016
+192.168.1.21,,00:00:00:00:00:00
+9c:93:4e:1e:3e:01,192.168.1.21,other,Xerox Printer,printer,,Fri Dec 16 12:11:34 2016
+192.168.1.19,Apple Inc.,60:c5:47:8b:8c:3c,192.168.1.19,other,,,,Fri Dec 16 12:06:13 2016
+192.168.1.12,Polycom,00:04:f2:c8:57:48,192.168.1.12,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:08:17 2016
+192.168.1.11,Polycom,00:04:f2:c1:22:6c,192.168.1.11,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:06:39 2016
+192.168.1.10,Polycom,00:04:f2:60:6d:0b,192.168.1.10,other,Polycom VVX300 with firmware 4.1.6.4835,embedded,,Fri Dec 16 12:05:36 2016
+G2VA-ACCOUNTING,Dell Inc.,b0:83:fe:6a:a3:bc,192.168.1.9,windows,Microsoft Windows 10 Pro,general-purpose,G2VA-ACCOUNTING,Fri Dec 16 12:00:01 2016
+DESKTOP-QHQ7TIK,Dell Inc.,84:7b:eb:0f:94:e3,192.168.1.8,windows,Microsoft Windows 10 Pro,general-purpose,DESKTOP-QHQ7TIK,Fri Dec 16 12:04:37 2016
+DESKTOP-5C6Q3NK,Hon Hai Precision Ind. Co.Ltd.,a8:a7:95:c8:ce:45,192.168.1.4,windows,Microsoft Windows 10 Home,general-purpose,DESKTOP-5C6Q3NK,Fri Dec 16 12:00:06 2016
+192.168.1.2,Apple Inc.,90:72:40:02:ff:23,192.168.1.2,mac,NetBSD 5.0
+NetBSD 5.1,general-purpose,,Fri Dec 16 11:57:14 2016
+192.168.1.1,NETGEAR,9c:d3:6d:a5:a9:cf,192.168.1.1,linux,Linux Kernel 2.6,general-purpose,,Fri Dec 16 11:57:50 2016
