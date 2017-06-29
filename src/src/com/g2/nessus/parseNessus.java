@@ -30,9 +30,10 @@ import java.io.BufferedReader;
  * https://sourceforge.net/projects/opencsv/?source=typ_redirect
  * 
  * Modification History:
- * 01/06/217		cmccoy	Created this package
+ * 01/06/2017		cmccoy	Created this package
  * 02/01/2017		cmccoy	No internet connection in the lab.
  * 							Changed mac address api calls to use an OUI file lookup to find the vendor. 
+ * 06/29/2017		sprokop	created outputs for connecctor-ends and hop-ports with service Name and protocol per host
  * 
  */
  import java.io.File;
@@ -43,6 +44,7 @@ import java.io.BufferedReader;
  import java.io.InputStream;
  import java.io.InputStreamReader;
  import java.io.StringWriter;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
@@ -120,6 +122,8 @@ public class parseNessus  extends DefaultHandler {
 	private static Boolean connectorEnds = false;
 	private static Boolean hostPorts = false;
 
+	private static File file;
+	
 	// indicator for attributes in <tag name=____ >
 	Boolean bHost_end 			= false;
 	Boolean bMacAddress 		= false;
@@ -145,6 +149,7 @@ public class parseNessus  extends DefaultHandler {
 		return NESSUS_VERSION;
 	}
 	
+	/*Loads a hash map, connecting vendors with qualified names */
 	public static boolean vendorMap() throws Exception {
 		//trying to help match the web vendor to the vendor in the .csv
 		Soundex soundex = new Soundex();//sara
@@ -153,34 +158,23 @@ public class parseNessus  extends DefaultHandler {
 
 		try{
 			
-//			File file;
-//			file = new File(getClass().getResource("/vendor.csv").toURI());
-//			BufferedReader reader = new BufferedReader(new FileReader(file));
-//			vendorFile = file.getAbsolutePath();
-			
-			
+			//looks for vendor file located in the same path location of the parser. 
 			File vendors = new File(parseNessus.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
 			String path = vendors.getAbsolutePath();
 			String file = vendors.getName();
 			System.out.println("File: " + file);
 			 vendorFile = path.replace(file, "") + defaultVendorFile ;
-			System.out.println("vendorFile: " + vendorFile);
-				
+		
 			scanner = new Scanner(new FileReader(vendorFile));
-		
-		
 		
 			while (scanner.hasNextLine()) {
 				// comma separator is expected delimiter
 				//2	3Com	Communications Profile::Vendor Hardware & Software::Vendor Folder::3Com
 				String[] columns = scanner.nextLine().split(",");
     		
-				System.out.println("soundex from VENDOR MAP: " + soundex.soundex(columns[1]));
+				//saves the soundex code for the vendor to match with the incofmation from the oui.csv
 				// column 1 = Vendor name, column 2 = MagicDraw Qualified Name
-				magicDrawVendors.put(soundex.soundex(columns[1]), columns[2]);//sara mod
-				//Debug to see if we are getting the right vendors with the right qualified name
-				//magicDrawVendors.forEach((vendor, qualifiedName)-> System.out.println(vendor + "NAME: " + qualifiedName));
-    		
+				magicDrawVendors.put(soundex.soundex(columns[1]), columns[2]);
 			} // end while
     	
 			// close all open resources to avoid compiler warning
@@ -191,18 +185,13 @@ public class parseNessus  extends DefaultHandler {
 			loadStatus = true;
 	    
 		}catch (FileNotFoundException e){
-			//Warns user that the vendors.csv could not be found
-			JOptionPane fileNotFound = new JOptionPane();
-			JOptionPane.showMessageDialog(fileNotFound,
-				    "Parser could not find vendors.csv. \n Please upload vendors.csv to the same file location as this NessusParser executable.",
-				    "CANNOT FIND VENDORS.CSV",
-				    JOptionPane.WARNING_MESSAGE);
+			showFileNotFound("vendors.csv", "");
 		}
 	    
 	    return loadStatus;
 	} // end vendorMap
 	
-	
+
 	public static void startParser(File[] inputFiles) throws IOException, ParserConfigurationException,
 	org.xml.sax.SAXException {
 		Scanner keyboard = new Scanner(System.in);
@@ -211,12 +200,10 @@ public class parseNessus  extends DefaultHandler {
 		
 		try {
 			// read all the files in the import directory into an array
-			//File[] listOfFiles = importDirectory.listFiles();
 				loadStatus = vendorMap();
 				if (loadStatus)
 					statusMessage = "Vendor file loaded successfully.";
-					//displayVendors();
-					//displayHostNames(); sara - the list is empty at this point
+
 					statusMessage = "Parser completed successfully.";
 	
 					File[] listOfFiles = inputFiles;
@@ -244,10 +231,8 @@ public class parseNessus  extends DefaultHandler {
 	            //Finally, tell the parser to parse the input and notify the handler
 	            sp.parse(scanFile, handler);
 	            
-	            //@DEBUG: display output on the console
-	            //handler.readList();
 	            handler.addtoHostTraceRmap();
-	            //writeMagicDrawCsvFile(magicDrawImportSpreadsheet);
+
 			} // end for (list all files in directory)
 		
 		} catch (Exception e) {
@@ -381,6 +366,8 @@ public class parseNessus  extends DefaultHandler {
            
     } 
     
+    /*Goes through current hash map of hosts and their names and creates 
+    * a new name for any ip not yet given a unique name */
     public static String getUniqueHostName(String iP){
     	   String ip= iP.trim();
     	    	Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
@@ -403,54 +390,48 @@ public class parseNessus  extends DefaultHandler {
     		//System.out.println("ip: " + ip + " " + name);
     		return name;
     	    }
-    	    
-    	    
-    	    
-    	    public void setUniqueHostNamewHost(ReportHost host){
-    	    	String sHost = host.getHost();
-    	    	
-    	    	Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
-    	    	Matcher matcher = pattern.matcher(sHost);
-    	    	
-    	    	if (matcher.matches()){ //sHost is an ip address
-    	    		uniqueHostName.put(sHost.trim(), "EndPoint_"+i );
-    	    		i++;
-    	    	}else{
-    	    	  uniqueHostName.put(sHost.trim(), sHost.trim());
-    	    	}  
-    	    }
 
-    	    
-    	    public static void addtoHostTraceRmap(){
+    /* creates a hash map of host names and assigns each host a unique name */
+    public void setUniqueHostNamewHost(ReportHost host){
+    	String sHost = host.getHost();
+    	
+    	Pattern pattern = Pattern.compile(IPADDRESS_PATTERN);
+    	Matcher matcher = pattern.matcher(sHost);
+    	
+    	if (matcher.matches()){ //sHost is an ip address
+    		uniqueHostName.put(sHost.trim(), "EndPoint_"+i );
+    		i++;
+    	}else{
+    		uniqueHostName.put(sHost.trim(), sHost.trim());
+    	}  
+    }
+
+    /* Creates a hash map of hosts with its trace route 
+     * hops used for connector-ends output spreadsheet */
+    public static void addtoHostTraceRmap(){
     	    	
-    	    	 Iterator<ReportHost> it = hostList.iterator();
-    	         ReportHost curHost = new ReportHost();
-    	         while (it.hasNext()) {
-    	         	curHost = it.next();
-    	         	String routeHops = curHost.getTraceRouteHops();
-    	         	//String ports = curHost.getPort();
-    	         	String host = curHost.getHost();
-    	         	String[] routeArray = routeHops.split("->");
-    	         	List<String> routeList = Arrays.asList(routeArray);
-    	         	List<String> withNames = new ArrayList<String>();
-    	         	//hostPorts.put(host, ports);
-    	         	hostTraceRmap.put(host, routeList);
-    	     	int i = 0;
-    	     	}
-    	 
-    			
-    	       //readList();
-    	       addtoConnectorEndsList(); 
-    	    }
+    	Iterator<ReportHost> it = hostList.iterator();
+    	ReportHost curHost = new ReportHost();
+    	while (it.hasNext()) {
+    		curHost = it.next();
+    		String routeHops = curHost.getTraceRouteHops();
+    		String host = curHost.getHost();
+    		String[] routeArray = routeHops.split("->");
+    		List<String> routeList = Arrays.asList(routeArray);
+    		hostTraceRmap.put(host, routeList);
+    		int i = 0;
+    	}
+
+    	addtoConnectorEndsList(); 
+    }
     	    
  
-    //creates a list to populate the connector-ends spreadsheet
+    /*creates a list from host and trace-route hops hash map
+     *to directly populate the connector-ends spreadsheet*/
     public static void addtoConnectorEndsList(){
     	List<String> values;
     	String source = new String();
     	String target;
-    	String targetN;
-    	String sourceN;
     	String blockName;
     	String sourceName;
     	String targetName;
@@ -464,8 +445,7 @@ public class parseNessus  extends DefaultHandler {
     	for (String key : hostTraceRmap.keySet()){
     		first = true;
    		 	values = hostTraceRmap.get(key);
-   		 
-   		 	//System.out.println("==New Host==");
+
    		 	Iterator<String> it = values.iterator();
    		 	while (it.hasNext()){
    		 		if (first) {
@@ -501,7 +481,6 @@ public class parseNessus  extends DefaultHandler {
    		 		}
    		 	}
     	}
-    
     }
     
     /*
@@ -509,23 +488,21 @@ public class parseNessus  extends DefaultHandler {
      */
     public static void readList() {
 
-        	 System.out.println("========== HostTraceRoute List ==========");
-             List<String> values = new ArrayList<String>();
-            // String key;
-         	Iterator<String> it =hostTraceRmap.keySet().iterator();
-             for (String key: hostTraceRmap.keySet()){
-             	//System.out.println("Key: " +key);
-             	values = hostTraceRmap.get(key);
-             System.out.println("Key: " +key);
-             	for (String value: values){
-             		
-             	System.out.println("                 "  + " Value: " + value);
-             	}
-        	
-        }
-
-    }
+    	System.out.println("========== HostTraceRoute List ==========");
+    	List<String> values = new ArrayList<String>();
+    	// String key;
+    	Iterator<String> it =hostTraceRmap.keySet().iterator();
+    	for (String key: hostTraceRmap.keySet()){
+    		//System.out.println("Key: " +key);
+    		values = hostTraceRmap.get(key);
+    		System.out.println("Key: " +key);
+    		for (String value: values){
+    			System.out.println("                 "  + " Value: " + value);
+             }	
+        }	
+    }	
     
+    /*Writes importSpreadsheet.csv */
     public static void writeConnectorEndsCsvFile(String saveTo) throws FileNotFoundException {
     	//Delimiter used in CSV file
     	final String COMMA_DELIMITER = ",";
@@ -549,7 +526,6 @@ public class parseNessus  extends DefaultHandler {
 	        	curConnection = it.next();
 	        	String[] entries = curConnection.split("#");
 	        	writer.writeNext(entries);
-	        	
 			}
 			connectorEnds = true;
 	        System.out.println("connectorEndsCSV file was created successfully.");
@@ -572,7 +548,7 @@ public class parseNessus  extends DefaultHandler {
 			 System.out.println("Save as file: " + saveTo);
 			
 		} // end of try-catch
-	} // end method writeMagicDrawCSVFile
+	} // end method writeMagicDrawConnectorEnds
     
     public static void writeMagicDrawHostPorts(String saveTo) throws FileNotFoundException {
     	//Delimiter used in CSV file
@@ -602,12 +578,10 @@ public class parseNessus  extends DefaultHandler {
 	        		System.out.println("ROW: " + row);
 	        		String[] rowEntry = row.split("#");
 	        		writer.writeNext(rowEntry);
-	        	}
-	        			
-	        
+	        	}    
 			}
 			hostPorts = true;
-	         System.out.println("ports CSV file was created successfully.");
+			System.out.println("ports CSV file was created successfully.");
 		}catch (FileNotFoundException e){
 			showWarning(saveTo);
 		} catch (Exception e) {
@@ -624,10 +598,9 @@ public class parseNessus  extends DefaultHandler {
 			}catch (NullPointerException e){
 				e.printStackTrace();
 			}
-			 System.out.println("Save as file: " + saveTo);
-			
+			 System.out.println("Save as file: " + saveTo);		
 		} // end of try-catch
-	} // end method writeMagicDrawCSVFile
+	} // end method writeMagicDrawHostPorts
     
     public static void writeMagicDrawCsvFile(String saveTo) throws FileNotFoundException {
         	//Delimiter used in CSV file
@@ -672,8 +645,7 @@ public class parseNessus  extends DefaultHandler {
     			}catch (NullPointerException e){
     				e.printStackTrace();
     			}
-    			 System.out.println("Save as file: " + saveTo);
-    			
+    			 System.out.println("Save as file: " + saveTo);	
     		} // end of try-catch
     	} // end method writeMagicDrawCSVFile
  
@@ -684,34 +656,27 @@ public class parseNessus  extends DefaultHandler {
 		StringBuilder result = new StringBuilder();
 		Soundex soundex = new Soundex();
 		String firstSix = macAddress.replace(":", "").toUpperCase().substring(0,6);
-		
-		//Debug//
-//			System.out.println("MacAddress: "+ newAddress);
+
 		try{
-		scanner = new Scanner(new FileReader(defaultMacFile));
-		while (scanner.hasNextLine()){
+			scanner = new Scanner(new FileReader(defaultMacFile));
+			while (scanner.hasNextLine()){
 			String[] columns = scanner.nextLine().split(",");
 			ouiMacLookUp.put(columns[1], columns[2]);
-		}
-		
-		 if (scanner != null)
+			}
+			if (scanner != null)
 		    	scanner.close();
 		}catch (FileNotFoundException a){
-		JOptionPane fileNotFound = new JOptionPane();
-
-			JOptionPane.showMessageDialog(fileNotFound,
-				    "Parser could not find oui.csv. \nPlease upload oui.csv to the same file location as this NessusParser executable. \nA new oui.csv can be uploaded at: \nhttp://regauth.standards.ieee.org/standards-ra-web/pub/view.html#registries.",
-				    "CANNOT FIND OUI.CSV",
-				    JOptionPane.WARNING_MESSAGE);
-
+			String addMessage = "\nA new oui.csv can be uploaded at: \nhttp://regauth.standards.ieee.org/standards-ra-web/pub/view.html#registries.";
+			showFileNotFound("oui.csv", addMessage);	
 			System.exit(0);
 		}
 		 
 		 String vendor = ouiMacLookUp.get(firstSix);
-		 
 		 return vendor;
 	}
 
+	/*Uses mac address from parser to look up vendor in oui.csv and uses 
+	 * the vendor to get the qualified name from the  pre-loaded vendors */
 	private static String lookupMagicDrawVendor(String vendorName) {
 		try {
 			Soundex soundex = new Soundex();
@@ -719,7 +684,24 @@ public class parseNessus  extends DefaultHandler {
 			// Is this a vendor we already have in the master list?
 			String vendor = soundex.encode(vendorName);
 			result = magicDrawVendors.get(soundex.soundex(vendorName));
-			//System.out.println("soundex from LOOKUP vendor: " + soundex.soundex(vendorName));
+
+			////////////////////////////The below is used only when the internet is able to be used. ///////////
+			//StringBuilder result = new StringBuilder();
+			//URL url = new URL(baseURL + macAddress);
+			//System.out.println(url);
+			//HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			//conn.setRequestMethod("GET");
+			//BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+			//String line;
+			//while ((line = rd.readLine()) != null) {
+			//	result.append(line);
+			//}
+			////webVendor
+			//rd.close();
+			//System.out.println(result);
+			//return result.toString();
+			////////////////////////////////////////////////////////////////////////////////////////////////////		
+			
 
 			return result == null ? "N/A" : result;
 		} catch (Exception e) {
@@ -734,13 +716,28 @@ public class parseNessus  extends DefaultHandler {
 	 public HashMap<String, String> getUniqueHostList() {
 	        return uniqueHostName;
 	    }
-	public static void showWarning(String filePath){
+	
+	 /*
+	  * Warnings used to locate and write specific files
+	  */
+	 
+	 public static void showWarning(String filePath){
 		JOptionPane fileNotFound = new JOptionPane();
 		JOptionPane.showMessageDialog(fileNotFound,
-			     "An output file cannot be accessed because it is currently being used by another process. \nAttempted file access: " + filePath,
+			     "An output file cannot be saved because it is currently being used by another process. \nAttempted file access: " + filePath,
 			    "CANNOT ACCESS FILE",
 			    JOptionPane.WARNING_MESSAGE);
 	}
+	
+	public static void showFileNotFound(String fileName, String addMessage){
+		JOptionPane fileNotFound = new JOptionPane();
+		JOptionPane.showMessageDialog(fileNotFound,
+			    "Parser could not find " + fileName+"\n Please upload vendors.csv to the same file location as this NessusParser executable." + addMessage,
+			    "CANNOT FIND " + fileName.toUpperCase(),
+			    JOptionPane.WARNING_MESSAGE);
+	}
+	
+	/*Will appear once all the files are actually written */
 	 public static void showSaveConfirmation(String directory, Component window){
 		 JOptionPane confirm = new JOptionPane();
 		 if (importSpreadSheet && connectorEnds && hostPorts){
