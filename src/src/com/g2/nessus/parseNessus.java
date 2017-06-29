@@ -149,15 +149,21 @@ public class parseNessus  extends DefaultHandler {
 		//trying to help match the web vendor to the vendor in the .csv
 		Soundex soundex = new Soundex();//sara
     	// Open the file for reading. Throw an exception if not found.
-		
+		String vendorFile;
 
 		try{
+			
+//			File file;
+//			file = new File(getClass().getResource("/vendor.csv").toURI());
+//			BufferedReader reader = new BufferedReader(new FileReader(file));
+//			vendorFile = file.getAbsolutePath();
+			
 			
 			File vendors = new File(parseNessus.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
 			String path = vendors.getAbsolutePath();
 			String file = vendors.getName();
 			System.out.println("File: " + file);
-			String vendorFile = path.replace(file, "") + defaultVendorFile ;
+			 vendorFile = path.replace(file, "") + defaultVendorFile ;
 			System.out.println("vendorFile: " + vendorFile);
 				
 			scanner = new Scanner(new FileReader(vendorFile));
@@ -305,18 +311,10 @@ public class parseNessus  extends DefaultHandler {
            } else if (qName.equalsIgnoreCase("cvss_temporal_score")) {
         	   bCvssTemporalScore = true;
            }else if (qName.equalsIgnoreCase("ReportItem")){ //sara
-//        	   host.setPort(attributes.getValue("port"), );
-//        	   host.setProtocol(attributes.getValue("protocol"));
-//        	   host.setSrv_Name(attributes.getValue("svc_name"));
         	   host.setSrvProPort(attributes.getValue("port"),attributes.getValue("protocol"),attributes.getValue("svc_name" ));
         	   bPort = true;
         	   bProtocol = true;}
-//           }else if (qName.equalsIgnoreCase("ReportItem")){ //sara
-//        	   host.setProtocol(attributes.getValue("protocol"));
-//        	   System.out.println("Protocol: " + attributes.getValue("protocol"));
-//        	   bProtocol = true;
-//           }
-    
+
     } // end StartElement
 
    
@@ -471,17 +469,17 @@ public class parseNessus  extends DefaultHandler {
    		 	Iterator<String> it = values.iterator();
    		 	while (it.hasNext()){
    		 		if (first) {
-   		 			source = it.next();
+   		 			source = it.next().trim();
    		 			first = false;
    		 		}else{
-   		 			target = it.next();
+   		 			target = it.next().trim();
    		 			
    		 		StringBuffer connectorInfo = new StringBuffer();	
    		 		
-   		 		blockName = getUniqueHostName(source.trim());
+   		 		blockName = getUniqueHostName(source);
    	        	sourceName = "Site::"+blockName;
    	        	
-   	        	targetName = "Site::"+ getUniqueHostName(target.trim());
+   	        	targetName = "Site::"+ getUniqueHostName(target);
    		 			
    	        	connectorInfo.append(source);
         		connectorInfo.append(delimiter);
@@ -528,53 +526,7 @@ public class parseNessus  extends DefaultHandler {
 
     }
     
-    public static void writeHostProtocol(String saveTo) {
-    	//Delimiter used in CSV file
-    	final String COMMA_DELIMITER = ",";
-    	final String NEW_LINE_SEPARATOR = "\n";
-    	String proEntry = new String();
-    	
-    	//CSV file header
-    	final String[] FILE_HEADER = "host,protocol".split(",");
-		
-		FileWriter fileWriter = null;
-		CSVWriter writer = null;		
-		try {
-			fileWriter = new FileWriter(saveTo);
-			writer = new CSVWriter(fileWriter, ',', '"');
-			writer.writeNext(FILE_HEADER);
-			
-			//Write a new report object list to the CSV file
-			Iterator<ReportHost> it = hostList.iterator();
-	         ReportHost curHost = new ReportHost();
-	         while (it.hasNext()) {
-	        	 curHost = it.next();
-	        	 //proEntry = curHost.getHost()+ "#"+curHost.getProtocol();
-	        	 System.out.println("Print Entry: " + proEntry);
-	        	String [] entries = proEntry.split("#");
-	        	writer.writeNext(entries);
-	        
-			}
-			System.out.println("ports CSV file was created successfully.");
-		
-		} catch (Exception e) {
-			System.out.println("Error in writeportsCSVFile.");
-			e.printStackTrace();
-		} finally {
-			
-			try {
-				writer.flush();
-				writer.close();
-			} catch (IOException e) {
-				System.out.println("Error while flushing/closing fileWriter");
-                e.printStackTrace();
-			}
-			 System.out.println("Save as file: " + saveTo);
-			
-		} // end of try-catch
-	} // end method writeMagicDrawCSVFile
-    
-    public static void writeConnectorEndsCsvFile(String saveTo) {
+    public static void writeConnectorEndsCsvFile(String saveTo) throws FileNotFoundException {
     	//Delimiter used in CSV file
     	final String COMMA_DELIMITER = ",";
     	final String NEW_LINE_SEPARATOR = "\n";
@@ -601,7 +553,8 @@ public class parseNessus  extends DefaultHandler {
 			}
 			connectorEnds = true;
 	        System.out.println("connectorEndsCSV file was created successfully.");
-			
+		}catch (FileNotFoundException e){
+			showWarning(saveTo);
 		} catch (Exception e) {
 			System.out.println("Error in connectorEndsCSVFile.");
 			e.printStackTrace();
@@ -613,13 +566,15 @@ public class parseNessus  extends DefaultHandler {
 			} catch (IOException e) {
 				System.out.println("Error while flushing/closing fileWriter");
                 e.printStackTrace();
+			}catch (NullPointerException e){
+				 e.printStackTrace();
 			}
 			 System.out.println("Save as file: " + saveTo);
 			
 		} // end of try-catch
 	} // end method writeMagicDrawCSVFile
     
-    public static void writeMagicDrawHostPorts(String saveTo) {
+    public static void writeMagicDrawHostPorts(String saveTo) throws FileNotFoundException {
     	//Delimiter used in CSV file
     	final String COMMA_DELIMITER = ",";
     	final String NEW_LINE_SEPARATOR = "\n";
@@ -653,7 +608,8 @@ public class parseNessus  extends DefaultHandler {
 			}
 			hostPorts = true;
 	         System.out.println("ports CSV file was created successfully.");
-		
+		}catch (FileNotFoundException e){
+			showWarning(saveTo);
 		} catch (Exception e) {
 			System.out.println("Error in writeportsCSVFile.");
 			e.printStackTrace();
@@ -665,13 +621,15 @@ public class parseNessus  extends DefaultHandler {
 			} catch (IOException e) {
 				System.out.println("Error while flushing/closing fileWriter");
                 e.printStackTrace();
+			}catch (NullPointerException e){
+				e.printStackTrace();
 			}
 			 System.out.println("Save as file: " + saveTo);
 			
 		} // end of try-catch
 	} // end method writeMagicDrawCSVFile
     
-    public static void writeMagicDrawCsvFile(String saveTo) {
+    public static void writeMagicDrawCsvFile(String saveTo) throws FileNotFoundException {
         	//Delimiter used in CSV file
         	final String COMMA_DELIMITER = ",";
         	final String NEW_LINE_SEPARATOR = "\n";
@@ -683,6 +641,7 @@ public class parseNessus  extends DefaultHandler {
     		CSVWriter writer = null;		
     		try {
     			fileWriter = new FileWriter(saveTo);
+    		
     			writer = new CSVWriter(fileWriter, ',', '"');
     			writer.writeNext(FILE_HEADER);
     			
@@ -697,11 +656,12 @@ public class parseNessus  extends DefaultHandler {
     			}
     	        importSpreadSheet = true;
     	        System.out.println("CSV file was created successfully.");
-    		
+    		}catch (FileNotFoundException e){
+    			showWarning(saveTo);
     		} catch (Exception e) {
     			System.out.println("Error in writeMagicDrawCSVFile.");
     			e.printStackTrace();
-    		} finally {
+    		}finally {
     			
     			try {
     				writer.flush();
@@ -709,6 +669,8 @@ public class parseNessus  extends DefaultHandler {
     			} catch (IOException e) {
     				System.out.println("Error while flushing/closing fileWriter");
                     e.printStackTrace();
+    			}catch (NullPointerException e){
+    				e.printStackTrace();
     			}
     			 System.out.println("Save as file: " + saveTo);
     			
@@ -772,7 +734,13 @@ public class parseNessus  extends DefaultHandler {
 	 public HashMap<String, String> getUniqueHostList() {
 	        return uniqueHostName;
 	    }
-
+	public static void showWarning(String filePath){
+		JOptionPane fileNotFound = new JOptionPane();
+		JOptionPane.showMessageDialog(fileNotFound,
+			     "An output file cannot be accessed because it is currently being used by another process. \nAttempted file access: " + filePath,
+			    "CANNOT ACCESS FILE",
+			    JOptionPane.WARNING_MESSAGE);
+	}
 	 public static void showSaveConfirmation(String directory, Component window){
 		 JOptionPane confirm = new JOptionPane();
 		 if (importSpreadSheet && connectorEnds && hostPorts){

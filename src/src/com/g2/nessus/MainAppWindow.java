@@ -222,7 +222,7 @@ Container window = getContentPane();
 		}	
 	}
 	//@SuppressWarnings("deprecation")
-	private void saveFile(){
+	private void saveFile() throws FileNotFoundException{
 
 		String cEfileName;
 		String iSfileName;
@@ -245,11 +245,11 @@ Container window = getContentPane();
 			cEfileName = saveToDirectory + magicDrawConnectorEnds;
 			iSfileName = saveToDirectory + magicDrawImportSpreadsheet;
 			hpFileName = saveToDirectory + magicDrawSrvProPorts;
-			
-			parseNessus.writeMagicDrawCsvFile(iSfileName); //saving importspreadsheet.csv
-			parseNessus.writeConnectorEndsCsvFile(cEfileName);//saving connector-ends.csv
-			parseNessus.writeMagicDrawHostPorts(hpFileName);//saving host-ports.csv
-			
+
+				parseNessus.writeMagicDrawCsvFile(iSfileName);
+				parseNessus.writeConnectorEndsCsvFile(cEfileName);
+				parseNessus.writeMagicDrawHostPorts(hpFileName);
+
 			parseNessus.showSaveConfirmation(saveToDirectory, window);
 			System.out.println("Save as file: " + folder.getAbsolutePath());
 		}
@@ -321,7 +321,15 @@ Container window = getContentPane();
 		JMenuItem mntmMbseCsvImport = new JMenuItem("MBSE CSV Import");
 		mntmMbseCsvImport.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				saveFile();
+				try {
+					saveFile();
+				} catch (FileNotFoundException e1) {
+					JOptionPane fileNotFound = new JOptionPane();
+					JOptionPane.showMessageDialog(fileNotFound,
+						    "An Output spreadsheet cannot be accessed because it is currently being used by another process.",
+						    "CANNOT ACCESS FILE" + magicDrawSrvProPorts,
+						    JOptionPane.WARNING_MESSAGE);
+				}//saving output spreadsheets
 			}
 		});
 		mntmMbseCsvImport.setToolTipText("Select the output directory");
