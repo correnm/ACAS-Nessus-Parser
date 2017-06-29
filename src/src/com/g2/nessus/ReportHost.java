@@ -1,3 +1,4 @@
+//ReportHost: showing tracehops
 package src.com.g2.nessus;
 
 /*
@@ -15,13 +16,21 @@ package src.com.g2.nessus;
  */
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ReportHost {
 	
 	//<ReportHost name="192.168.54.2"><HostProperties>
 	private String sHost;
+
 	
 	// <tag name="host-ip">192.168.54.2</tag>
 	private String	sIpAddress;	
@@ -29,13 +38,14 @@ public class ReportHost {
 	// may need to lookup using the mac address, if available using HTTP GET or POST request to https://macvendors.com/api
 	// Sample Java request: http://www.java2blog.com/2016/07/how-to-send-http-request-getpost-in-java.html
 	// http://api.macvendors.com/00:80:64:a5:36:33 returns WYSE TECHNOLOGY LLC
-	// MAC-Addresses are assigned by IEEE. Search / browse and download at http://standards.ieee.org/develop/regauth/oui/public.html
+	// MAC-Addresses are assigned by IEEE. 
+	// Search / browse and download at http://standards.ieee.org/develop/regauth/oui/public.html
 	// <tag name="mac-address">00:80:64:a5:36:33</tag>
 	private String	sVendor;
-
-	// short operating system name 				
 	private String 	sMacAddress;
+	private String  sQualifiedName;
 
+	// short operating system name
 	// <tag name="os">windows</tag>			
 	private String	sOs;					
 										
@@ -53,7 +63,8 @@ public class ReportHost {
 
 	// end date for the scan
 	// tag name="HOST_END">Fri Nov 18 10:19:53 2016</tag>									
-	private String	sScanDate;			
+	private String	sScanDate;
+	int i = 0;
 										
 	// follow the traceroute or 10287 plugin output in <ReportItem>
 	// <tag name="traceroute-hop-0">192.168.54.2</tag>
@@ -61,7 +72,15 @@ public class ReportHost {
 	// 192.168.54.18
 	// 192.168.54.2
 	// </plugin_output>
+	//private String[] sTraceRouteHops; // = new String[];
 	private List<String> sTraceRouteHops = new ArrayList<String>();
+	
+	
+	private List<String> sEndPoints = new ArrayList<String>();
+	private String[] sEndPoint;
+	//private String sPort;
+	
+	private List<String> connectorEndsGroup = new ArrayList<String>();
 
 	// installed software which includes the operating system in a different form
 	// <tag name="cpe-2">cpe:/a:microsoft:ie:11.0.9600.18499</tag>
@@ -79,6 +98,11 @@ public class ReportHost {
 
 	//<cvss_temporal_score>6.9</cvss_temporal_score>
 	private List<String> cvssTemporalScore = new ArrayList<String>();
+	private List<String> sPorts = new ArrayList<String>();
+	
+	private List<String> sProtocol = new ArrayList<String>();
+	private List<String> sSrvNames = new ArrayList<String>();
+	private List<String> sSrvProPort = new ArrayList<String>();
 	
 	// Class variables already initialized in declaration. Nothing to do in the constructor.
 	public ReportHost () {
@@ -93,10 +117,10 @@ public class ReportHost {
         return replaceNull(sHost);
     }
     public void setHost(String sHost) {
-        this.sHost = sHost;
+    	this.sHost = sHost;	
     }
-	//*************************************************************	
-    public String getIpAddress() {
+  //*************************************************************
+     public String getIpAddress() {
         return replaceNull(sIpAddress);
     }
     public void setIpAddress(String sIpAddress) {
@@ -104,10 +128,18 @@ public class ReportHost {
     }
 	//*************************************************************
 	public String getVendor() {
+		//String vendor = sVendor.replaceAll("^\"|\"$", "");
 		return replaceNull(sVendor);
 	}
 	public void setVendor (String sVendor){
 		this.sVendor = sVendor;
+	}
+	//*************************************************************
+	public String getQualifiedName() {
+		return replaceNull(sQualifiedName);
+	}
+	public void setQualifiedName (String sQualifiedName){
+		this.sQualifiedName = sQualifiedName;
 	}
 	//*************************************************************
 	public String getMacAddress() {
@@ -155,19 +187,28 @@ public class ReportHost {
 	}
 	//*************************************************************
 	public String getTraceRouteHops() {
-		String hops = "";
+		String hops = "   ";
+		String sub;
 		// Generate an iterator. Start just after the last element.
-		ListIterator li = sTraceRouteHops.listIterator(sTraceRouteHops.size());
-
-		// Iterate in reverse because the last node is presented first in the nessus file
+		ListIterator li = sTraceRouteHops.listIterator(sTraceRouteHops.size()); //ListIterator li = sTraceRouteHops.listIterator(sTraceRouteHops.size()); 
+		
+		// Iterate in reverse because the last node is presented first in the nessus file	
 		while(li.hasPrevious()) {
-		    hops = hops + li.previous() + "\n";
+			hops = hops + li.previous() + "-> ";
 		}
+		// Do not include the hops that are a question mark or come after a question mark
+		if (hops.contains("?")){
+			sub = hops.substring(hops.indexOf("?"), hops.length());
+			hops = hops.replace(sub, "");
+		}	
+		hops = hops.substring(0, hops.length()-3);
 		return replaceNull(hops);	
 	}
-	
-	public void setTraceRouteHops(String sTraceRouteHops) {
-  		this.sTraceRouteHops.add(sTraceRouteHops);
+
+	public void setTraceRouteHops(String sTraceRouteHop) { //(String sTraceRouteHop, String sTagName)
+			sTraceRouteHops.add(sTraceRouteHop);
+			//System.out.println("sTraceRouteHop: " + sTraceRouteHop);
+		
 	}
 	//*************************************************************
 	public String getInstalledSoftware() {
@@ -184,10 +225,17 @@ public class ReportHost {
 	}
 	//*************************************************************
 	public String getCVSSBaseScore() {
-		String base = ""; 
-		for (String element : cvssBaseScore) {
-		    base = base + element + "\n";
+		String base=""; 
+		Collections.sort(cvssBaseScore, Collections.reverseOrder());//sara
+		if (cvssBaseScore.size() ==0){
+			base="";
+		}else{
+			base = cvssBaseScore.get(0);	
 		}
+//		
+//		for (String element : cvssBaseScore) {
+//		    base = base + element + "\n";
+//		}
 		return replaceNull(base);
 	}
 	public void setCVSSBaseScore(String cvssBaseScore) {
@@ -196,26 +244,91 @@ public class ReportHost {
 	}
 	//*************************************************************
 	public String getCVSSTemporalScore() {
-		String temporal = ""; 
-		for (String element : cvssTemporalScore) {
-			temporal = temporal + element + "\n";
+		String temporal=""; 
+		Collections.sort(cvssTemporalScore, Collections.reverseOrder());//sara
+		//cvssTemporalScore.add("_");
+		//temporal = cvssTemporalScore.get(0);
+		
+		if (cvssTemporalScore.size() ==0){
+			temporal="";
+		}else{
+			temporal = cvssTemporalScore.get(0);	
 		}
+
 		return replaceNull(temporal);
 	}
 	public void setCVSSTemporalScore(String cvssTemporalScore) {
   		this.cvssTemporalScore.add(cvssTemporalScore);
 	}
+	//*************************************************************	
+//	public String getPort(){
+//		String portList = "";
+//		ListIterator li = sPorts.listIterator(0); //ListIterator li = sTraceRouteHops.listIterator(sTraceRouteHops.size()); 
+//		
+//		 //Iterate in reverse because the last node is presented first in the nessus file	
+//		while(li.hasNext()) {
+//			portList = portList + li.next() + ", ";
+//		}
+//		portList = portList.substring(0, portList.length()-2);
+//		return portList;
+//	}
+//	
+//	public void setPort(String port){
+//		this.sPorts.add(port);
+//	}
+//	//*************************************************************
+//	  public String getSrv_Name() {
+//	      return replaceNull(sHost);
+//	  }
+//	  public void setSrv_Name(String sSrv) {
+//	  	this.sSrvNames.add(sSrv);	
+//	  }
+//	
+//	//***********************************************************
+//	public String getProtocol(){
+//		String proList = "  ";
+//		ListIterator li = sProtocol.listIterator(0); //ListIterator li = sTraceRouteHops.listIterator(sTraceRouteHops.size()); 
+//		
+//		 //Iterate in reverse because the last node is presented first in the nessus file	
+//		while(li.hasNext()) {
+//			proList = proList + li.next() + ", ";
+//		}
+//		proList = proList.substring(0, proList.length()-2);
+//		//System.out.println( "protocol List: " + proList);
+//		return proList;
+//	}
+	
+	public void setProtocol(String protocol){
+		this.sProtocol.add(protocol+ ";");
+		//System.out.println("Protocol: " + protocol);
+	}
+	//*************************************************************
+public List<String> getSrvProPort(){
+	return sSrvProPort;
+	
+}
+	
+	public void setSrvProPort (String port, String protocol, String srvName){
+	
+	String delemiter = "#";
+	String srvProPort = getHost() +delemiter+port + delemiter + srvName+ delemiter+protocol;
+	//System.out.println("SrvProPort: " + srvProPort);
+	this.sSrvProPort.add(srvProPort);
+}
+	
 	
 	@Override
 	public String toString() {
 		StringBuffer hostInfo = new StringBuffer();
 		String delimiter = "#";
-		//"host,vendor,macAddress,IP-Address,O/S,operatingSystem,systemType,FQDN,scanDate"
+		//"host,vendor,macAddress,qualifiedName,IP-Address,O/S,operatingSystem,systemType,FQDN,scanDate"
 		hostInfo.append(getHost());
 		hostInfo.append(delimiter);
 		hostInfo.append(getVendor());
 		hostInfo.append(delimiter);
 		hostInfo.append(getMacAddress());
+		hostInfo.append(delimiter);
+		hostInfo.append(getQualifiedName());
 		hostInfo.append(delimiter);
 		hostInfo.append(getIpAddress());
 		hostInfo.append(delimiter);
@@ -239,5 +352,6 @@ public class ReportHost {
 
 		return hostInfo.toString();
 	}
+
 	
 }  // end of class ReportHost
