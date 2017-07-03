@@ -530,6 +530,7 @@ public class parseNessus  extends DefaultHandler {
 			connectorEnds = true;
 	        System.out.println("connectorEndsCSV file was created successfully.");
 		}catch (FileNotFoundException e){
+			System.out.println("saveto: " + saveTo);
 			showWarning(saveTo);
 		} catch (Exception e) {
 			System.out.println("Error in connectorEndsCSVFile.");
@@ -575,7 +576,6 @@ public class parseNessus  extends DefaultHandler {
 	        	Iterator<String> its = hostPorts.iterator();
 	        	while(its.hasNext()){
 	        		String row = its.next();
-	        		System.out.println("ROW: " + row);
 	        		String[] rowEntry = row.split("#");
 	        		writer.writeNext(rowEntry);
 	        	}    
