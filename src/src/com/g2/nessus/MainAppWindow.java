@@ -3,6 +3,7 @@ package src.com.g2.nessus;
 import src.com.g2.nessus.*;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Cursor;
@@ -11,22 +12,36 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FileDialog;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.LayoutManager;
 import java.awt.Panel;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.swing.JFrame;
 import javax.swing.JFileChooser;
@@ -39,6 +54,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.event.MenuKeyListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.plaf.ProgressBarUI;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -49,14 +65,19 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.json.simple.JSONObject;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import com.opencsv.CSVReader;
+
+
 
 import javax.swing.event.MenuKeyEvent;
 import javax.swing.KeyStroke;
 import javax.swing.RowFilter;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.GroupLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -75,6 +96,9 @@ import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
+import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 
 
 public class MainAppWindow extends JFrame {
@@ -82,9 +106,10 @@ Container window = getContentPane();
 	private JMenuItem	Open;
 	private JMenuItem	Save;
 	private JMenuItem	Exit;
-	public static String magicDrawImportSpreadsheet = "/importSpreadsheet.csv"; //public static String magicDrawImportSpreadsheet = "./export/importSpreadsheet.csv";
-	public static String magicDrawConnectorEnds = "/connector-ends.csv";//public static String magicDrawConnectorEnds = "./export/connector-ends.csv";
-	public static String magicDrawSrvProPorts = "/host-ports.csv";
+	public static String magicDrawImportSpreadsheet = "importSpreadsheet.csv"; //public static String magicDrawImportSpreadsheet = "./export/importSpreadsheet.csv";
+	public static String magicDrawConnectorEnds = "connector-ends.csv";//public static String magicDrawConnectorEnds = "./export/connector-ends.csv";
+	public static String magicDrawSrvProPorts = "host-ports.csv";
+	public static String USER_GUIDE = "ACAS_Nessus_Parser_User_Guide.pdf";
 
 	/**
 	 * Launch the application.
@@ -158,6 +183,7 @@ Container window = getContentPane();
 	    //validate() ensures that the menu bar is always enabled. 
 	    window.validate();
 	    buildSearchArea(nessus);
+	    window.revalidate();
 	    buildTable(data, colNames);
 	    
 	    //revalidate() ensures everything is enabled after the search	    
@@ -175,16 +201,25 @@ Container window = getContentPane();
 	public void buildSearchArea(parseNessus nessus){
 		Box searchArea= Box.createHorizontalBox();
 		JLabel searchlabel = new JLabel("Search: ", JLabel.RIGHT);
-		JTextField searchField = new JTextField(30);
+		JTextField searchField = new JTextField(20);
+		JButton revert = new JButton("All Results");
+		
+		
 		searchField.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
 				String text = searchField.getText().toLowerCase();
 				getData(nessus, text);
 			}
 		});
+		revert.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt){
+				getData(nessus,"");
+			}
+		});
 		
 		searchArea.add(searchlabel);
 		searchArea.add(searchField);
+		searchArea.add(revert);
 			
 		Box singlelineFields = Box.createVerticalBox();
 		singlelineFields.add(searchArea);
@@ -193,8 +228,46 @@ Container window = getContentPane();
 			
 		window.add(searchPanel, BorderLayout.PAGE_START);
 	}
+//	public class progressBar(){
+//		 JProgressBar progressBar = new JProgressBar();
+//	     progressBar.setIndeterminate(true);
+//	     JPanel panel = new JPanel();
+//	        panel.add(progressBar);
+//	        add(panel, BorderLayout.PAGE_START);
+//	        //add(new JScrollPane(taskOutput), BorderLayout.CENTER);
+//	        JPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+//	}
+	private void showBar(JFrame frame){
+		//Create and set up the window.
+        
+
+        //Create and set up the content pane.
+        JComponent newContentPane = new JPanel();
+        JProgressBar progressBar = new JProgressBar();
+	     progressBar.setIndeterminate(true);
+	     progressBar.setStringPainted(true);
+	    frame.add(progressBar,BorderLayout.PAGE_START );
+	    frame.setLocationRelativeTo(null);
+	     
+//	     newContentPane.add(progressBar);
+//	      frame.add(newContentPane, BorderLayout.PAGE_START);
+//	        //add(new JScrollPane(taskOutput), BorderLayout.CENTER);
+	       // newContentPane.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+	     
+       // newContentPane.setOpaque(true); //content panes must be opaque
+        frame.setContentPane(newContentPane);
+
+        //Display the window.
+        frame.setVisible(true);
+	}
 	
-	private void openFiles(){
+	
+	
+	
+	
+	
+	
+	private void openFiles() throws SAXParseException{
 
 		JFileChooser fileChooser = new JFileChooser(); 
 		fileChooser.setMultiSelectionEnabled(true);
@@ -203,22 +276,34 @@ Container window = getContentPane();
 		if (result == JFileChooser.APPROVE_OPTION) {
 		    // user selects a file
 			 File[] selectedFiles = fileChooser.getSelectedFiles();
-				
+	
+			 JFrame frame = new JFrame("Loading");
+			 frame.setSize(500,10);
+			 frame.setVisible(true);
+			 frame.setLocationRelativeTo(null);
+//			 showBar(frame);
+
 			 window.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			 frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			 
 			 //table is created depending on the selected nessus files 
 			 parseNessus nessus = new parseNessus();
 				try {
-					nessus.startParser(selectedFiles);
+					try {
+						nessus.startParser(selectedFiles);
+					} catch (SAXException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				window.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				} catch (IOException e) {
 					e.printStackTrace();
 				} catch (ParserConfigurationException e) {
 					e.printStackTrace();
-				} catch (SAXException e) {
-					e.printStackTrace();
-				}
+				} 
+				
 			getData(nessus, "");
-
+			frame.dispose();
 		}	
 	}
 	//@SuppressWarnings("deprecation")
@@ -227,24 +312,28 @@ Container window = getContentPane();
 		String cEfileName;
 		String iSfileName;
 		String hpFileName;
-
+		String delimiter;
+		
 		JOptionPane confirm = new JOptionPane();
 		String saveToDirectory;
 		JFileChooser saveFiles = new JFileChooser();
+		saveFiles.setDialogTitle("Save: Select a Directory");
+		saveFiles.setApproveButtonText("Save");
 		
 		//Tells the user that the files will be saved as a .csv
-		FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV file", ".csv");
+		FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV files", ".csv");
 		saveFiles.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 		saveFiles. setAcceptAllFileFilterUsed(false);
 		saveFiles.setFileFilter(filter);
 		
-		int userSelection = saveFiles.showSaveDialog(null);
+		int userSelection = saveFiles.showOpenDialog(null);
 		if (userSelection ==JFileChooser.APPROVE_OPTION){
 			File folder = saveFiles.getSelectedFile();
 			saveToDirectory = folder.getAbsolutePath();
-			cEfileName = saveToDirectory + magicDrawConnectorEnds;
-			iSfileName = saveToDirectory + magicDrawImportSpreadsheet;
-			hpFileName = saveToDirectory + magicDrawSrvProPorts;
+			delimiter = File.separator;
+			cEfileName = saveToDirectory + delimiter+ magicDrawConnectorEnds;
+			iSfileName = saveToDirectory + delimiter+magicDrawImportSpreadsheet;
+			hpFileName = saveToDirectory + delimiter+magicDrawSrvProPorts;
 
 				parseNessus.writeMagicDrawCsvFile(iSfileName);
 				parseNessus.writeConnectorEndsCsvFile(cEfileName);
@@ -257,29 +346,150 @@ Container window = getContentPane();
 	}
 	
 	public void selectDataFile(){
-		try {
-			URL url = new URL("https://standards.ieee.org/develop/regauth/oui/oui.csv");
-		} catch (MalformedURLException e1) {
-			e1.printStackTrace();
-		}
+		String instructions = "<html><h3><b>Update oui.csv MAC Address look-up:</b></h3><br>1. Click on the link below.<br>2. Download (as CSV) MAC Address Block Large(MA-L) to the same file location as this NessusParser executable.<br>"
+				+ "<h4>This may take a couple of minutes due to the size of the file.</h4></html>";
+		String url = "https://regauth.standards.ieee.org/standards-ra-web/pub/view.html#registries";
+		String link = "<html><FONT color = \"#000099\"> <U>IEEE STANDARDS ASSOCIATION: Registration Authority</U></FONT></html>";
+
+		JLabel inst = new JLabel (instructions);
+		JLabel hyperlink = new JLabel(link);
 		
+		GridBagConstraints c = new GridBagConstraints();
+		JFrame frame = new JFrame("Update oui.csv");
 		
+		frame.setLayout(new GridBagLayout());
+		//set to fixed size because it becomes deformed if disproportionate. 
+		frame.setSize(750, 300); //good for both mac and windows
+		frame.setResizable(false);
+		frame.setLocationRelativeTo(null);
 		
+		hyperlink.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		hyperlink.setToolTipText(url);
+		hyperlink.addMouseListener(new MouseAdapter(){
+			public void mouseClicked(MouseEvent e){
+				try{
+					Desktop.getDesktop().browse(new URI(url));
+				}catch(URISyntaxException| IOException ex){
+					ex.printStackTrace();
+				}
+			}
+		});
 		
-		Frame frame = new Frame();
-		Desktop desktop = Desktop.getDesktop();
-		FileDialog dialog = new FileDialog(frame, "Select Parser Data File", FileDialog.LOAD);
-		dialog.show();
-		String fileName = dialog.getDirectory()+dialog.getFile();
-		File selectedFile = new File(fileName);
-		try {
-			desktop.open(selectedFile);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		System.out.println(fileName);
+		//arranging Layout of the frame
+		c.gridx = 0;
+	    c.gridy = 0;
+		c.ipadx = 2;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
+	    frame.add(inst,c);
+
+	    c.anchor = GridBagConstraints.CENTER;
+	    c.gridy= 1;
+	    frame.add(hyperlink, c);
+
+	    frame.setVisible(true);
+
 	}
+	
+	public void showAbout(){
+		JFrame frame = new JFrame("About");
+		String url = "http://www.g2-ops.com/home/";
+		frame.setLayout(new GridBagLayout());
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+		frame.setSize(500, 300);
+		frame.setResizable(false);
+		frame.setLocationRelativeTo(null);
 		
+		JLabel logo = new JLabel(new ImageIcon("./images/logo.png"));
+		JLabel appInfo = new JLabel ("<html><h3><span style =\"background-color:= #FFFFFF\">Nessus Parser 1.0</b><BR>@ 2017 G2 Ops</span></h3></html>");
+		JLabel moreInfo = new JLabel("<html><h4>For more information about G2 Ops' products and services, visit our website: <h4></html>");
+		JLabel site = new JLabel ("<html><FONT color = \"#000099\"> <U>www.g2-ops.com</U></FONT></html>");
+
+		JPanel about = new JPanel();
+	    about.setSize(800, 250); //511,298
+	    about.setBorder(BorderFactory.createLoweredBevelBorder());
+	    about.setLayout(new GridBagLayout());
+	    
+		GridBagConstraints c = new GridBagConstraints();
+		
+		site.setCursor( new Cursor(Cursor.HAND_CURSOR));
+		site.setToolTipText(url);
+		site.addMouseListener(new MouseAdapter(){
+			public void mouseClicked(MouseEvent e){
+				try{
+					Desktop.getDesktop().browse(new URI(url));
+				}catch(URISyntaxException| IOException ex){
+					
+				}
+			}
+		});
+		
+		c.gridx = 0;
+		c.gridy = 0;
+
+		c.fill = GridBagConstraints.HORIZONTAL;
+	    c.anchor = GridBagConstraints.FIRST_LINE_START;
+	    frame.add(logo,c);
+	   
+	    c.gridy = 1;
+	    frame.add(appInfo, c);
+		
+	    c.gridx = 0;
+	    c.gridy =0;
+	    c.ipadx = 2;
+	    c.anchor = GridBagConstraints.FIRST_LINE_START;
+		about.add(moreInfo, c);
+
+		c.ipady = 70;
+		c.anchor = GridBagConstraints.PAGE_START;
+		about.add(site,c);
+		
+		c.gridy = 2;
+		c.ipady = 0;
+		c.gridwidth = 3;
+		c.gridheight = 2;
+		frame.add(about,c);
+		
+		frame.setVisible(true);
+		
+	}
+	
+	public void openUserGuide(){
+		String userGuideFileName;
+
+		try{
+			
+			//gets file of the parser, then finds and opens the user guide in the same file location
+			File locate = new File(parseNessus.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+			String path = locate.getAbsolutePath();
+			String file = locate.getName();
+			System.out.println("File: " + file);
+			userGuideFileName = path.replace(file, "") + USER_GUIDE ;
+		    
+			System.out.println("userGuideFileName: "+ userGuideFileName);
+			
+			//opening file
+			File userGuide = new File(userGuideFileName);
+
+
+		    Desktop desktop = Desktop.getDesktop();
+
+		    desktop.open(userGuide);
+		    			 
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalArgumentException e){
+			parseNessus.showFileNotFound(USER_GUIDE, "");
+		}catch (UnsupportedOperationException e){
+			JFrame frame = new JFrame();
+			JOptionPane.showMessageDialog(frame,"Platform is not supported to open User Guide file" , 
+					"UnsupportedOperationException Found", JOptionPane.WARNING_MESSAGE);
+		}
+	}
+
 	public void createMenuBar(){
 		// Define the application menu options
 		JMenuBar menuBar = new JMenuBar();
@@ -295,24 +505,19 @@ Container window = getContentPane();
 		JMenuItem mntmOpen = new JMenuItem("Open");
 		mntmOpen.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				openFiles();
+				try {
+					openFiles();
+				} catch (SAXParseException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 		});
 		mntmOpen.setToolTipText("Select the input Nessus file(s)");
 		mntmOpen.setMnemonic(KeyEvent.VK_O);
 		mnFile.add(mntmOpen);
 		
-//		//FILE>UPDATE MAC ADDRESSES
-//		JMenuItem mntmParserData = new JMenuItem("Update MAC Address Data");
-//		mntmParserData.addActionListener(new ActionListener() { 
-//			public void actionPerformed(ActionEvent e) {
-//				selectDataFile();
-//			}
-//		});
-//		mntmParserData.setToolTipText("Save an updated version of a parser data file");
-//		mntmParserData.setMnemonic(KeyEvent.VK_O);
-//		mnFile.add(mntmParserData);
-//		
+		
 		//FILE>SAVE RESULTS
 		JMenu mnSaveResults = new JMenu("Save Results");
 		mnFile.add(mnSaveResults);
@@ -346,9 +551,20 @@ Container window = getContentPane();
 		mnTools.setMnemonic(KeyEvent.VK_T);
 		menuBar.add(mnTools);
 		
+		//TOOLS>UPDATE MAC ADDRESSES
+		JMenuItem mntmParserData = new JMenuItem("Update MAC Address Data");
+		mntmParserData.addActionListener(new ActionListener() { 
+			public void actionPerformed(ActionEvent e) {
+				selectDataFile();
+			}
+		});
+		mntmParserData.setToolTipText("Upload a new oui.csv for MAC Address look-up");
+		mntmParserData.setMnemonic(KeyEvent.VK_O);
+		mnTools.add(mntmParserData);
+		
 		//TOOLS>TDB
-		JMenuItem mntmTbd = new JMenuItem("TBD");
-		mnTools.add(mntmTbd);
+//		JMenuItem mntmTbd = new JMenuItem("TBD");
+//		mnTools.add(mntmTbd);
 		
 		//HELP
 		JMenu mnHelp = new JMenu("Help");
@@ -358,11 +574,21 @@ Container window = getContentPane();
 		
 		//HELP>USER'S GUIDE
 		JMenuItem mntmUsersGuide = new JMenuItem("User's Guide");
+		mntmUsersGuide.addActionListener(new ActionListener() { 
+			public void actionPerformed(ActionEvent e) {
+				openUserGuide();
+			}
+		});
 		mnHelp.add(mntmUsersGuide);
 		
 		//HELP>ABOUT
 		JMenuItem mntmAbout = new JMenuItem("About");
 		mnHelp.add(mntmAbout);
+		mntmAbout.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				showAbout();
+			}
+		});
 	}
 		/**
 		 * Create the frame.

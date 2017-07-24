@@ -103,7 +103,6 @@ public class ReportHost {
 	}
 	// **** Setters and Getters for all class variables *****
     public String getHost() {
-    	System.out.println("Host: " + sHost);
         return replaceNull(sHost.trim());
     }
     public void setHost(String sHost) {

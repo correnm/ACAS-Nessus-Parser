@@ -2,6 +2,7 @@
  package src.com.g2.nessus;
 
 import java.awt.Component;
+import java.awt.Cursor;
 import java.io.BufferedReader;
 /**
  * 
@@ -58,6 +59,7 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -67,6 +69,7 @@ import org.apache.commons.codec.language.Soundex;
 import org.apache.commons.io.*;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import com.opencsv.CSVWriter;
@@ -185,7 +188,7 @@ public class parseNessus  extends DefaultHandler {
 			loadStatus = true;
 	    
 		}catch (FileNotFoundException e){
-			showFileNotFound("vendors.csv", "");
+			showFileNotFound("vendors.csv", "\nResult: 'qualifiedName' will not be accurate.");
 		}
 	    
 	    return loadStatus;
@@ -193,10 +196,14 @@ public class parseNessus  extends DefaultHandler {
 	
 
 	public static void startParser(File[] inputFiles) throws IOException, ParserConfigurationException,
-	org.xml.sax.SAXException {
+	SAXException {
 		Scanner keyboard = new Scanner(System.in);
 		 String statusMessage = null;
 		 i=0; //initializing i to 0 for assigning unique names to the hosts in uniqueHostNames
+		 
+		 hostList.clear();
+		 connectorEndsList.clear();
+		 hostTraceRmap.clear();
 		
 		try {
 			// read all the files in the import directory into an array
@@ -229,15 +236,18 @@ public class parseNessus  extends DefaultHandler {
 	            parseNessus handler = new parseNessus();
 	
 	            //Finally, tell the parser to parse the input and notify the handler
+	            try{
 	            sp.parse(scanFile, handler);
-	            
+	            }catch (SAXParseException e){
+	            	showNonCompatibleFile();
+	            }
 	            handler.addtoHostTraceRmap();
 
 			} // end for (list all files in directory)
 		
 		} catch (Exception e) {
 			e.printStackTrace();
-		} 
+		}
 		finally {
 			System.out.println("********* Parser Status **********");
 			System.out.println(statusMessage);
@@ -295,7 +305,7 @@ public class parseNessus  extends DefaultHandler {
         	   bCvssBaseScore = true;
            } else if (qName.equalsIgnoreCase("cvss_temporal_score")) {
         	   bCvssTemporalScore = true;
-           }else if (qName.equalsIgnoreCase("ReportItem")){ //sara
+           }else if (qName.equalsIgnoreCase("ReportItem")){
         	   host.setSrvProPort(attributes.getValue("port"),attributes.getValue("protocol"),attributes.getValue("svc_name" ));
         	   bPort = true;
         	   bProtocol = true;}
@@ -312,7 +322,7 @@ public class parseNessus  extends DefaultHandler {
            if (qName.equalsIgnoreCase("ReportHost")) {
         	   // add new host to the list
                hostList.add(host);
-               setUniqueHostNamewHost(host);//sara
+               setUniqueHostNamewHost(host);
            } else if (bHost_end) { 
                host.setScanDate(temp);
                bHost_end = false;
@@ -513,6 +523,9 @@ public class parseNessus  extends DefaultHandler {
 		
 		FileWriter fileWriter = null;
 		CSVWriter writer = null;		
+		if (!(connectorEndsList.size()>0))
+			return;
+			
 		try {
 			fileWriter = new FileWriter(saveTo);
 			writer = new CSVWriter(fileWriter, ',', '"');
@@ -526,12 +539,14 @@ public class parseNessus  extends DefaultHandler {
 	        	curConnection = it.next();
 	        	String[] entries = curConnection.split("#");
 	        	writer.writeNext(entries);
-			}
-			connectorEnds = true;
+	        }
+	        connectorEnds = true;
 	        System.out.println("connectorEndsCSV file was created successfully.");
+	        
 		}catch (FileNotFoundException e){
 			System.out.println("saveto: " + saveTo);
 			showWarning(saveTo);
+			return;
 		} catch (Exception e) {
 			System.out.println("Error in connectorEndsCSVFile.");
 			e.printStackTrace();
@@ -549,6 +564,7 @@ public class parseNessus  extends DefaultHandler {
 			 System.out.println("Save as file: " + saveTo);
 			
 		} // end of try-catch
+		
 	} // end method writeMagicDrawConnectorEnds
     
     public static void writeMagicDrawHostPorts(String saveTo) throws FileNotFoundException {
@@ -562,6 +578,9 @@ public class parseNessus  extends DefaultHandler {
 		
 		FileWriter fileWriter = null;
 		CSVWriter writer = null;		
+		if (!(hostList.size()>0))
+			return;
+		
 		try {
 			fileWriter = new FileWriter(saveTo);
 			writer = new CSVWriter(fileWriter, ',', '"');
@@ -569,9 +588,9 @@ public class parseNessus  extends DefaultHandler {
 			
 			//Write a new report object list to the CSV file
 			Iterator<ReportHost> it = hostList.iterator();
-	         ReportHost curHost = new ReportHost();
-	         while (it.hasNext()) {
-	        	 curHost = it.next();
+	        ReportHost curHost = new ReportHost();
+	        while (it.hasNext()) {
+	        	curHost = it.next();
 	        	List<String> hostPorts = curHost.getSrvProPort();
 	        	Iterator<String> its = hostPorts.iterator();
 	        	while(its.hasNext()){
@@ -579,11 +598,12 @@ public class parseNessus  extends DefaultHandler {
 	        		String[] rowEntry = row.split("#");
 	        		writer.writeNext(rowEntry);
 	        	}    
-			}
-			hostPorts = true;
-			System.out.println("ports CSV file was created successfully.");
+	        }
+		    hostPorts = true;
+		    System.out.println("ports CSV file was created successfully.");
 		}catch (FileNotFoundException e){
 			showWarning(saveTo);
+			return;
 		} catch (Exception e) {
 			System.out.println("Error in writeportsCSVFile.");
 			e.printStackTrace();
@@ -600,6 +620,7 @@ public class parseNessus  extends DefaultHandler {
 			}
 			 System.out.println("Save as file: " + saveTo);		
 		} // end of try-catch
+		
 	} // end method writeMagicDrawHostPorts
     
     public static void writeMagicDrawCsvFile(String saveTo) throws FileNotFoundException {
@@ -612,6 +633,9 @@ public class parseNessus  extends DefaultHandler {
     		
     		FileWriter fileWriter = null;
     		CSVWriter writer = null;		
+    		if (!(hostList.size()>0))
+    			return;
+    		
     		try {
     			fileWriter = new FileWriter(saveTo);
     		
@@ -631,6 +655,7 @@ public class parseNessus  extends DefaultHandler {
     	        System.out.println("CSV file was created successfully.");
     		}catch (FileNotFoundException e){
     			showWarning(saveTo);
+    			return;
     		} catch (Exception e) {
     			System.out.println("Error in writeMagicDrawCSVFile.");
     			e.printStackTrace();
@@ -686,6 +711,7 @@ public class parseNessus  extends DefaultHandler {
 			result = magicDrawVendors.get(soundex.soundex(vendorName));
 
 			////////////////////////////The below is used only when the internet is able to be used. ///////////
+			//private static final String baseURL = "http://api.macvendors.com/";	
 			//StringBuilder result = new StringBuilder();
 			//URL url = new URL(baseURL + macAddress);
 			//System.out.println(url);
@@ -720,11 +746,15 @@ public class parseNessus  extends DefaultHandler {
 	 /*
 	  * Warnings used to locate and write specific files
 	  */
+	 public static void noNessusFile(){
+		 JOptionPane noNessus = new JOptionPane();
+		 JOptionPane.showMessageDialog(noNessus, "<html>No Data has been found.<br>Try re-uploading your *.nessus file.</html>", "NO DATA", JOptionPane.WARNING_MESSAGE);
+	 }
 	 
 	 public static void showWarning(String filePath){
 		JOptionPane fileNotFound = new JOptionPane();
 		JOptionPane.showMessageDialog(fileNotFound,
-			     "An output file cannot be saved because it is currently being used by another process. \nAttempted file access: " + filePath,
+			     "An output file cannot be saved because it is either currently being used by another process or the file path localtion does not enable 'WRITE' permissions. \nAttempted file access: " + filePath,
 			    "CANNOT ACCESS FILE",
 			    JOptionPane.WARNING_MESSAGE);
 	}
@@ -732,7 +762,7 @@ public class parseNessus  extends DefaultHandler {
 	public static void showFileNotFound(String fileName, String addMessage){
 		JOptionPane fileNotFound = new JOptionPane();
 		JOptionPane.showMessageDialog(fileNotFound,
-			    "Parser could not find " + fileName+"\n Please upload vendors.csv to the same file location as this NessusParser executable." + addMessage,
+			    "<html><h3>Parser cannot find " + fileName+"</h3></html> \nPlease upload "+ fileName+" to the same file location as this NessusParser executable." + addMessage,
 			    "CANNOT FIND " + fileName.toUpperCase(),
 			    JOptionPane.WARNING_MESSAGE);
 	}
@@ -742,7 +772,15 @@ public class parseNessus  extends DefaultHandler {
 		 JOptionPane confirm = new JOptionPane();
 		 if (importSpreadSheet && connectorEnds && hostPorts){
 			 confirm.showMessageDialog(window, "Saved importSpreadsheet.csv, connector-ends.csv, and host-ports.csv to " + directory);
+		 }else if(!importSpreadSheet && !connectorEnds && !hostPorts){
+			 noNessusFile();
 		 }
+	 }
+	 
+	 public static void showNonCompatibleFile(){
+		 JFrame warn = new JFrame();
+		 JOptionPane.showMessageDialog(warn,"Please select a compatable file." , 
+					"Error Found", JOptionPane.WARNING_MESSAGE);
 	 }
 	 
 } // end parseNessus
