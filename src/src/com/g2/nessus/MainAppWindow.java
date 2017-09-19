@@ -1,5 +1,18 @@
 package src.com.g2.nessus;
 
+/**
+ * @author Corren McCoy G2 Ops, Virginia Beach, VA
+ * 
+ * @purpose This class creates the graphic user interface for the parser. 
+ * The user is able to upload nessus files, parse the information, display select information 
+ * on the interface, save output csv files from Magic Draw, as well as save information to 
+ * a common database. 
+ * 
+ * Modification History
+ * June 2017	sara.prokop		enabled parsing and saving capabilities
+ * 18-Sept-2017 
+ */
+
 import src.com.g2.nessus.*;
 
 import java.awt.BorderLayout;
@@ -228,15 +241,7 @@ Container window = getContentPane();
 			
 		window.add(searchPanel, BorderLayout.PAGE_START);
 	}
-//	public class progressBar(){
-//		 JProgressBar progressBar = new JProgressBar();
-//	     progressBar.setIndeterminate(true);
-//	     JPanel panel = new JPanel();
-//	        panel.add(progressBar);
-//	        add(panel, BorderLayout.PAGE_START);
-//	        //add(new JScrollPane(taskOutput), BorderLayout.CENTER);
-//	        JPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-//	}
+
 	private void showBar(JFrame frame){
 		//Create and set up the window.
         
@@ -248,13 +253,7 @@ Container window = getContentPane();
 	     progressBar.setStringPainted(true);
 	    frame.add(progressBar,BorderLayout.PAGE_START );
 	    frame.setLocationRelativeTo(null);
-	     
-//	     newContentPane.add(progressBar);
-//	      frame.add(newContentPane, BorderLayout.PAGE_START);
-//	        //add(new JScrollPane(taskOutput), BorderLayout.CENTER);
-	       // newContentPane.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-	     
-       // newContentPane.setOpaque(true); //content panes must be opaque
+
         frame.setContentPane(newContentPane);
 
         //Display the window.
@@ -543,6 +542,11 @@ Container window = getContentPane();
 		//FILE>SAVE RESULTS>CASSANDRA DATABASE
 		JMenuItem mntmCassandraDatabase = new JMenuItem("Cassandra Database");
 		mntmCassandraDatabase.setToolTipText("Select the output database");
+		mntmCassandraDatabase.addActionListener(new ActionListener() { 
+			public void actionPerformed(ActionEvent e) {
+				parseNessus.savetoCassandra();
+			}
+		});
 		mnSaveResults.add(mntmCassandraDatabase);
 		
 		//TOOLS
