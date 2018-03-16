@@ -1,7 +1,7 @@
 Primary Developer: Sara Bergman
 Contributers: Corren McCoy, Jennifer Gregorio
 Created: July 17, 2017
-Modified (V3.0): Feb 23, 2018
+Modified (V3.1): Feb 23, 2018
 
 Purpose: To parse nessus and lightning files and save multiple output CSV files to a specified location in the local directory.
 
@@ -10,6 +10,7 @@ Changes within Version 3:
 	2.Created an additional output csv file for parsing nessus files that displays the host, base score, and temporal score of each of its vulnerabilities.
 	3.Ability for the user to input the specific site for MBSE import.
 	4.Additional installed_software cpe element columns in the importSpreadsheet output. 
+Version 3.1 correctly parses the connector_ends output of the nessus file. 
 
 Output files include:
 	1. importSpreadsheet.csv, which includes the majority of information that is being parsed out of the file.
@@ -33,3 +34,4 @@ Modification History:
 Date			Author			Description
 18-Jan-2018 		sara.bergman		published version 2.1 
 23-Feb-2018		sara.bergman		published version 3.0
+16-Mar-2018		sara.bergman		published version 3.1
