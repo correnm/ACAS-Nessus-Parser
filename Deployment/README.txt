@@ -1,10 +1,11 @@
 Created: July 17, 2017
-Modified (V4): June 07, 2018
+Modified (V4): June 11, 2018
 
 Purpose: To parse Nessus and Lightning files and save multiple output CSV files to a specified location in the local directory.
 
-Changes within Version 3: 
-	1.User may select multiple files or directories. 
+Changes within Version 4: 
+	1.User may select multiple files or directories. The parser will traverse through all directories to gather all files with a .nessus or .xml 	extension to parse accordingly. 
+	2. Updated User Guide. 
 
 Output files include:
 	1. importSpreadsheet.csv, which includes the majority of information that is being parsed out of the file.
@@ -29,4 +30,4 @@ Date			Author			Description
 18-Jan-2018 		sara.bergman		published version 2.1 
 23-Feb-2018		sara.bergman		published version 3.0
 16-Mar-2018		sara.bergman		published version 3.1
-07-Jun-2018		sara.bergman		published version 4
+11-Jun-2018		sara.bergman		published version 4
